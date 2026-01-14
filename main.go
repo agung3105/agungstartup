@@ -27,7 +27,10 @@ func main() {
 	router.SetTrustedProxies([]string{"192.168.1.2"})
 
 	api := router.Group("/api/v1")
+
 	api.POST("/users", userHandler.RegisterUser)
+	api.POST("/sessions", userHandler.Login)
+
 	router.Run()
 
 	//input dari user
