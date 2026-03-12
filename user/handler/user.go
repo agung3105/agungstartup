@@ -3,6 +3,7 @@ package handler
 import (
 	"agungstartup/helper"
 	"agungstartup/user"
+	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -90,11 +91,7 @@ func (h *userHandler) Login(c *gin.Context) {
 }
 
 func (h *userHandler) CheckEmailAvailability(c *gin.Context) {
-	//input email dari user
-	//mapping input email ke struct input
-	//struct input di passing ke service
-	//service akan memanggil repository - db - cek email sudah ada atau belum
-	//repository - db -
+
 	var input user.CheckEmailInput
 
 	err := c.ShouldBindJSON(&input)
@@ -124,4 +121,49 @@ func (h *userHandler) CheckEmailAvailability(c *gin.Context) {
 	response := helper.APIResponse(metaMessage, http.StatusOK, "success", data)
 	c.JSON(http.StatusOK, response)
 
+}
+
+func (h *userHandler) UploadAvatar(c *gin.Context) {
+	//tangkap input dari user
+	//simpan gambarnya di folder "images/"
+	//service panggil repository
+	//JWT (sementara hardcode user ID nya, seakann user yang login adalah user ID = 1)
+	//repository ambil data user dengan ID = 1
+	//update data user dengan filepath yang baru
+
+	file, err := c.FormFile("avatar")
+	if err != nil {
+		data := gin.H{"is_uploaded": false}
+		response := helper.APIResponse("Failed to upload image", http.StatusBadRequest, "error", data)
+
+		c.JSON(http.StatusBadRequest, response)
+		return
+	}
+
+	//harusnya userID didapatkan dari JWT, tapi karena belum belajar JWT, untuk sementara userID di hardcode
+	userID := 1
+
+	path := fmt.Sprintf("images/%d-%s", userID, file.Filename)
+
+	err = c.SaveUploadedFile(file, path)
+	if err != nil {
+		data := gin.H{"is_uploaded": false}
+		response := helper.APIResponse("Failed to upload image", http.StatusBadRequest, "error", data)
+
+		c.JSON(http.StatusBadRequest, response)
+		return
+	}
+
+	_, err = h.userService.SaveAvatar(userID, path)
+	if err != nil {
+		data := gin.H{"is_uploaded": false}
+		response := helper.APIResponse("Failed to upload image", http.StatusBadRequest, "error", data)
+
+		c.JSON(http.StatusBadRequest, response)
+		return
+	}
+	data := gin.H{"is_uploaded": true}
+	response := helper.APIResponse("Avatar Successfully Uploaded", http.StatusOK, "success", data)
+
+	c.JSON(http.StatusOK, response)
 }
